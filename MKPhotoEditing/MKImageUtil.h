@@ -53,4 +53,7 @@
 
 + (UIImage *)imageFromCIImage:(CIImage *)ciImage;
 
+//把图片缩放成指定大小
++ (UIImage *)compressOriginalImage:(UIImage *)image toSize:(CGSize)size;
+
 @end

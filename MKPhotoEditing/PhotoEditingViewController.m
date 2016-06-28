@@ -36,6 +36,7 @@ NSString *formatVersion = @"1.0";
 
 - (void)setupBasicWithOriginalImage:(UIImage *)image
 {
+    NSMutableArray<UIButton *> *btnArray = @[].mutableCopy;
     //滤镜名称都在这里 [CIFilter filterNamesInCategory:kCICategoryBuiltIn]
     filterNameArray = @[@"CIPhotoEffectInstant", //怀旧
                         @"CIPhotoEffectNoir", //黑白
@@ -55,19 +56,47 @@ NSString *formatVersion = @"1.0";
     CGFloat btnWidth = 60;
     CGFloat btnHeight = btnContentView.frame.size.height-10;
     
+    CGFloat scale = [UIScreen mainScreen].scale;
+    CGFloat imgWidth = image.size.width;
+    CGFloat imgHeight = image.size.height;
+    
+    UIImage *compressImage = [MKImageUtil compressOriginalImage:image
+                                                         toSize:CGSizeMake(btnWidth * scale, (btnWidth * imgHeight / imgWidth) * scale)]; //缩图片
+    
     for(NSInteger i=0; i<filterNameArray.count; i++){
         UIButton *btn = [[UIButton alloc] initWithFrame:CGRectMake(i * (btnWidth+8), 5, btnWidth, btnHeight)];
-        
-        CIImage *ciImage = [MKImageUtil filterWithOriginalImage:[[CIImage alloc] initWithImage:image] filterName:filterNameArray[i]];
-        [btn setImage: [MKImageUtil imageFromCIImage: ciImage] forState:UIControlStateNormal];
+        [btn setImage: compressImage forState:UIControlStateNormal];
         
         btn.imageView.contentMode = UIViewContentModeScaleAspectFit;
         btn.tag = i;
         [btn addTarget:self action:@selector(filterInputImage:) forControlEvents:UIControlEventTouchUpInside];
         [btnContentView addSubview:btn];
+        [btnArray addObject:btn];
     }
     
     btnContentView.contentSize = CGSizeMake(count * (btnWidth + 8)-8, btnContentView.frame.size.height);
+    
+    //延时处理
+    dispatch_time_t start = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC));
+    dispatch_after(start, dispatch_get_main_queue(), ^{
+        
+        [self setBtnFilterImageToArray:btnArray InIndex:0];
+    });
+    
+}
+
+- (void)setBtnFilterImageToArray:(NSArray<UIButton *> *)btnArray InIndex:(NSInteger)index
+{
+    __block CIImage *filterCIImage = nil;
+    UIButton *btn = btnArray[index];
+    CIImage *ciImage = [[CIImage alloc] initWithImage: [btn imageForState:UIControlStateNormal]];
+    
+    //为照片加上滤镜
+    filterCIImage = [MKImageUtil filterWithOriginalImage:ciImage filterName:filterNameArray[index]];
+    [btn setImage: [MKImageUtil imageFromCIImage: filterCIImage] forState:UIControlStateNormal];
+    if(![[btnArray lastObject] isEqual:btn]){
+        [self setBtnFilterImageToArray:btnArray InIndex:index+1];
+    }
 }
 
 - (void)filterInputImage:(UIButton *)btn

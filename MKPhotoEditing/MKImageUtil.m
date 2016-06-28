@@ -66,4 +66,16 @@
     return resultImage;
 }
 
++ (UIImage *)compressOriginalImage:(UIImage *)image toSize:(CGSize)size
+{
+    UIImage *resultImage = nil;
+    UIGraphicsBeginImageContext(size);
+    
+    [image drawInRect:(CGRect){CGPointZero, size}];
+    resultImage = UIGraphicsGetImageFromCurrentImageContext();
+    
+    UIGraphicsEndImageContext();
+    return resultImage;
+}
+
 @end
